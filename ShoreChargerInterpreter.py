@@ -2,9 +2,7 @@ import PCANBasic as pb
 import Chroma62000H as ch
 import time as tm
 import threading
-# import tkinter
-# import psutil
-
+import sys
 
 ###############################################################################
 #                                 THREADS                                     #
@@ -77,10 +75,7 @@ def SerialThread():
 
 
 def InfoThread():
-    global msg_count, errors, measured_voltage, measured_current
-
-    # Info message rate in seconds
-    rate = 10
+    global msg_count, errors, measured_voltage, measured_current, info_rate
 
     # timing for status print
     app_start_time = tm.perf_counter()
@@ -91,9 +86,10 @@ def InfoThread():
     print("Info Loop Running...")
     tm.sleep(0.5)
 
+    print("")
     # ------------------------------ Info Loop ------------------------------ #
     while(1):
-        if ((curr_app_time - prev_app_time) > rate):
+        if ((curr_app_time - prev_app_time) > info_rate):
             print("Run Time: " + f'{(curr_app_time-app_start_time)/60:.2f}'
                     + "mins \tCAN Msg Count: " + str(msg_count))
             print("\tPSU Measured Voltage: " + f'{measured_voltage:.2f}' + " V \tPSU Measured Current: " + f'{measured_current:.2f}' + " A")
@@ -104,9 +100,14 @@ def InfoThread():
             curr_app_time = tm.perf_counter()
 
 ###############################################################################
-#                                  INIT                                       #
+#                                  MAIN                                       #
 ###############################################################################
-print("Program Start...")
+def ExitProgram():
+    print(".\n.\n.\nProgram Exit")
+    sys.exit()
+
+
+print("Program Start...\n")
 
 # Initialize global variables
 msg_count = 0
@@ -118,9 +119,8 @@ requested_current = 0.0
 measured_voltage = 0.0
 measured_current = 0.0
 
+info_rate = 10 # Info message rate in seconds
 
-# Initialization flag - assume no errors
-init_complete = True
 
 # Initialize pcan object
 print("Initializing PCAN")
@@ -131,8 +131,6 @@ baudrate = pb.PCAN_BAUD_500K # Setup Connection's Baud Rate
 result = pcan.Initialize(pcan_handle, baudrate) # initialize device
 
 if result != pb.PCAN_ERROR_OK:
-    init_complete = False
-
     if result != pb.PCAN_ERROR_CAUTION:
         print("PCAN Error!")
     else:
@@ -141,26 +139,38 @@ if result != pb.PCAN_ERROR_OK:
         print('******************************************************')
         result = pb.PCAN_ERROR_OK
 
+    ExitProgram()
+
 # Initialize Chroma PSU object
 print("Initializing Chroma")
 chroma = ch.CHROMA_62000H()
 
 if chroma.status == "Not Connected":
-    init_complete = False
-
     print("Chroma PSU Error! " + chroma.error_reason)
 
-if init_complete:
-    print("Starting Threads")
-    x = threading.Thread(target=CANThread)
-    y = threading.Thread(target=SerialThread)
-    z = threading.Thread(target=InfoThread)
-
-    print("Shore Charger Translation Layer Running...")
-    x.start()
-    y.start()
-    z.start()
+    ExitProgram()
 
 
-print(".\n.\n.\nProgram Exit")
-exit(0)
+x = threading.Thread(target=CANThread, daemon=True)
+y = threading.Thread(target=SerialThread, daemon=True)
+z = threading.Thread(target=InfoThread, daemon=True)
+
+print("\nShore Charger Translation Layer Running...")
+x.start()
+y.start()
+z.start()
+
+while(True):
+    user_input = str(input())
+
+    if user_input == "x":
+        ExitProgram()
+    elif user_input == "r":
+        print("Enter new info rate in seconds:")
+        new_rate = float(input())
+        info_rate = new_rate
+    elif user_input == "?":
+        print("'x' - Terminate program\n" + \
+              "'r' - Change info print rate")
+    else:
+        print("Invalid command! Enter '?' for command list\n")
