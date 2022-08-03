@@ -26,7 +26,7 @@ class CHROMA_62000H:
 
             if self.address.__len__() == 0:
                 self.status = "Not Connected"
-                print("Could not connect to device")
+                self.error_reason = "Could not connect to device"
                 quit()
             else:
                 self.address = self.address[0]
@@ -34,12 +34,14 @@ class CHROMA_62000H:
                 # print("Connected to " + self.address)
                 self.status = "Chroma 62000H Supply Connected"
                 self.connected_with = 'USB'
-                print(self.status)
 
         except:
             self.status = "Not Connected"
+            self.error_reason = "except: PyVISA is not able to find any devices"
             quit()
-            print("PyVISA is not able to find any devices")
+
+    def isConnected(self):
+        return self.status
 
 
     def write_command(self, command):
