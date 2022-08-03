@@ -1,0 +1,5 @@
+pyserial==3.5b0
+pyusb==1.2.1
+PyVISA==1.12.0
+PyVISA-py==0.5.3
+visa==1.0.0
