@@ -38,55 +38,54 @@ class CHROMA_62000H:
             self.status = "Not Connected"
             self.error_reason = "except: PyVISA is not able to find any devices"
 
-    def isConnected(self):
+    def IsConnected(self):
         return self.status
 
-
-    def write_command(self, command):
+    def WriteCommand(self, command):
         self.device.write(command)
         time.sleep(_delay)
 
     def EnableOutput(self):
         command = ':CONF:OUTP ON'
-        self.write_command(command)
+        self.WriteCommand(command)
 
     def DisableOutput(self):
         command = ':CONF:OUTP OFF'
-        self.write_command(command)
+        self.WriteCommand(command)
 
     def SetVoltage(self, val):
         command = ':SOUR:VOLT %s' % val
-        self.write_command(command)
-        
+        self.WriteCommand(command)
+
     def SetVoltageLimits(self, minVolt, maxVolt):
         command = ':SOUR:VOLT:LIMIT:LOW %s' % minVolt
-        self.write_command(command)
+        self.WriteCommand(command)
 
         command = ':SOUR:VOLT:LIMIT:HIGH %s' % maxVolt
-        self.write_command(command)
+        self.WriteCommand(command)
 
     def SetCurrent(self, val):
         command = ':SOUR:CURR %s' % val
-        self.write_command(command)
+        self.WriteCommand(command)
 
     def SetCurrentLimits(self, minCurr, maxCurr):
         command = ':SOUR:CURR:LIMIT:LOW %s' % minCurr
-        self.write_command(command)
+        self.WriteCommand(command)
 
         command = ':SOUR:CURR:LIMIT:HIGH %s' % maxCurr
-        self.write_command(command)
+        self.WriteCommand(command)
 
     def SetOVP(self, val):
         command = ':SOUR:VOLT:PROT:HIGH %s' % val
-        self.write_command(command)
+        self.WriteCommand(command)
 
     def SetOCP(self, val):
         command = ':SOUR:CURR:PROT:HIGH %s' % val
-        self.write_command(command)
-        
+        self.WriteCommand(command)
+
     def SetOPP(self, val):
         command = ':SOUR:POW:PROT:HIGH %s' % val
-        self.write_command(command)
+        self.WriteCommand(command)
 
     def GetOutputState(self):
         query = ':CONF:OUTP?'
@@ -126,7 +125,7 @@ class CHROMA_62000H:
         query = ':SOUR:CURR:PROT:HIGH?'
         ocp = self.device.query(query)
         return ocp
-        
+
     def GetOPP(self):
         query = ':SOUR:POW:PROT:HIGH?'
         opp = self.device.query(query)

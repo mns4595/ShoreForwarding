@@ -8,6 +8,7 @@ import sys
 #                                 THREADS                                     #
 ###############################################################################
 
+
 def CANThread():
     global pcan, pcan_handle, msg_count, errors, requested_voltage, requested_current
 
@@ -91,9 +92,9 @@ def InfoThread():
     while(1):
         if ((curr_app_time - prev_app_time) > info_rate):
             print("Run Time: " + f'{(curr_app_time-app_start_time)/60:.2f}'
-                    + "mins \tCAN Msg Count: " + str(msg_count)\
-                    + " \tPSU Measured Voltage: " + f'{measured_voltage:.2f}' \
-                    + " V \tPSU Measured Current: " + f'{measured_current:.2f}' \
+                  + "mins \tCAN Msg Count: " + str(msg_count)
+                    + " \tPSU Measured Voltage: " + f'{measured_voltage:.2f}'
+                    + " V \tPSU Measured Current: " + f'{measured_current:.2f}'
                     + " A")
 
             curr_app_time = tm.perf_counter()
@@ -104,6 +105,8 @@ def InfoThread():
 ###############################################################################
 #                                  MAIN                                       #
 ###############################################################################
+
+
 def ExitProgram():
     print(".\n.\n.\nProgram Exit")
     sys.exit()
@@ -121,16 +124,16 @@ requested_current = 0.0
 measured_voltage = 0.0
 measured_current = 0.0
 
-info_rate = 10 # Info message rate in seconds
+info_rate = 10  # Info message rate in seconds
 
 
 # Initialize pcan object
 print("Initializing PCAN")
 pcan = pb.PCANBasic()
 
-pcan_handle = pb.PCAN_USBBUS1 # Get PCAN Channel
-baudrate = pb.PCAN_BAUD_500K # Setup Connection's Baud Rate
-result = pcan.Initialize(pcan_handle, baudrate) # initialize device
+pcan_handle = pb.PCAN_USBBUS1  # Get PCAN Channel
+baudrate = pb.PCAN_BAUD_500K  # Setup Connection's Baud Rate
+result = pcan.Initialize(pcan_handle, baudrate)  # initialize device
 
 if result != pb.PCAN_ERROR_OK:
     if result != pb.PCAN_ERROR_CAUTION:
@@ -172,7 +175,7 @@ while(True):
         new_rate = float(input())
         info_rate = new_rate
     elif user_input == "?":
-        print("'x' - Terminate program\n" + \
+        print("'x' - Terminate program\n" +
               "'r' - Change info print rate")
     else:
         print("Invalid command! Enter '?' for command list\n")
