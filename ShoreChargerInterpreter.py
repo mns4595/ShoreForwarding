@@ -10,20 +10,20 @@ import sys
 
 def CANThread():
     global pcan, pcan_handle, msg_count, errors, requested_voltage, requested_current
-
+        
     # Wait for the module to start (i.e.: The clock is running)
-    start_time = 0
-    wait_counter = 0
-    while start_time == 0:
-        if (wait_counter % 300000 == 0):
-            wait_counter = 0
-            print("Waiting for PCAN Signal...")
+    #start_time = 0
+    #wait_counter = 0
+    #while start_time == 0:
+    #    if (wait_counter % 300000 == 0):
+    #        wait_counter = 0
+    #        print("Waiting for PCAN Signal...")
 
-        dumdum = pcan.Read(pcan_handle)
-        start_time = dumdum[2].micros + 1000 * dumdum[2].millis + \
-            int('0x100000000', 16) * 1000 * dumdum[2].millis_overflow
+    #    dumdum = pcan.Read(pcan_handle)
+    #    start_time = dumdum[2].micros + 1000 * dumdum[2].millis + \
+    #        int('0x100000000', 16) * 1000 * dumdum[2].millis_overflow
 
-        wait_counter = wait_counter + 1
+    #    wait_counter = wait_counter + 1
 
     # Send a message to inform that the CAN code is running
     print("PCAN Signal Received. CAN Loop Running...")
@@ -53,7 +53,7 @@ def CANThread():
 
 
 def SerialThread():
-    global requested_voltage, requested_current
+    global requested_voltage, requested_current, measured_voltage, measured_current
 
     # local vars
     requested_voltage_local = 0.0
@@ -67,11 +67,11 @@ def SerialThread():
     while(1):
         if (requested_voltage_local != requested_voltage):
             # send voltage request to PSU
-            a = 0
+            measured_voltage = requested_voltage # TODO - remove
 
         if (requested_current_local != requested_current):
             # send current request to PSU
-            b = 0
+            measured_current = requested_current # TODO - remove
 
 
 def InfoThread():
