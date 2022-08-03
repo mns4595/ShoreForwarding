@@ -91,8 +91,10 @@ def InfoThread():
     while(1):
         if ((curr_app_time - prev_app_time) > info_rate):
             print("Run Time: " + f'{(curr_app_time-app_start_time)/60:.2f}'
-                    + "mins \tCAN Msg Count: " + str(msg_count))
-            print("\tPSU Measured Voltage: " + f'{measured_voltage:.2f}' + " V \tPSU Measured Current: " + f'{measured_current:.2f}' + " A")
+                    + "mins \tCAN Msg Count: " + str(msg_count)\
+                    + " \tPSU Measured Voltage: " + f'{measured_voltage:.2f}' \
+                    + " V \tPSU Measured Current: " + f'{measured_current:.2f}' \
+                    + " A")
 
             curr_app_time = tm.perf_counter()
             prev_app_time = tm.perf_counter()
