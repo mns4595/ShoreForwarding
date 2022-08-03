@@ -161,7 +161,7 @@ x = threading.Thread(target=CANThread, daemon=True)
 y = threading.Thread(target=SerialThread, daemon=True)
 z = threading.Thread(target=InfoThread, daemon=True)
 
-print("\nShore Charger Translation Layer Running...")
+print("\nShore Charger Translation Layer Running!")
 x.start()
 y.start()
 z.start()
