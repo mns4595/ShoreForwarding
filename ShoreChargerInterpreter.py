@@ -27,8 +27,9 @@ def CANThread():
 
         wait_counter = wait_counter + 1
 
-    # Send a message to inform that the main code is running
+    # Send a message to inform that the CAN code is running
     print("PCAN Signal Received. CAN Loop Running...")
+    tm.sleep(0.5)
 
     # ------------------------------- CAN Loop ------------------------------ #
     while(1):
@@ -60,6 +61,10 @@ def SerialThread():
     requested_voltage_local = 0.0
     requested_current_local = 0.0
 
+    # Send a message to inform that the PSU code is running
+    print("Chroma Signal Received. Serial Loop Running...")
+    tm.sleep(0.5)
+
     # ----------------------------- Serial Loop ----------------------------- #
     while(1):
         if (requested_voltage_local != requested_voltage):
@@ -81,6 +86,10 @@ def InfoThread():
     app_start_time = tm.perf_counter()
     curr_app_time = tm.perf_counter()
     prev_app_time = tm.perf_counter()
+
+    # Send a message to inform that the main code is running
+    print("Info Loop Running...")
+    tm.sleep(0.5)
 
     # ------------------------------ Info Loop ------------------------------ #
     while(1):
