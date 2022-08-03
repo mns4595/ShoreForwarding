@@ -148,8 +148,7 @@ chroma = ch.CHROMA_62000H()
 if chroma.status == "Not Connected":
     init_complete = False
 
-    print("Chroma PSU Error!")
-    print("\t" + chroma.error_reason)
+    print("Chroma PSU Error! " + chroma.error_reason)
 
 if init_complete:
     print("Starting Threads")
