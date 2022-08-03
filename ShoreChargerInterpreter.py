@@ -106,6 +106,7 @@ def InfoThread():
 ###############################################################################
 #                                  INIT                                       #
 ###############################################################################
+print("Program Start...")
 
 # Initialize global variables
 msg_count = 0
@@ -118,18 +119,16 @@ measured_voltage = 0.0
 measured_current = 0.0
 
 
+# Initialization flag - assume no errors
+init_complete = True
+
 # Initialize pcan object
+print("Initializing PCAN")
 pcan = pb.PCANBasic()
 
 pcan_handle = pb.PCAN_USBBUS1 # Get PCAN Channel
 baudrate = pb.PCAN_BAUD_500K # Setup Connection's Baud Rate
 result = pcan.Initialize(pcan_handle, baudrate) # initialize device
-
-# Initialize Chroma PSU object
-chroma = ch.CHROMA_62000H()
-
-# Initialization flag - assume no errors
-init_complete = True
 
 if result != pb.PCAN_ERROR_OK:
     init_complete = False
@@ -142,18 +141,23 @@ if result != pb.PCAN_ERROR_OK:
         print('******************************************************')
         result = pb.PCAN_ERROR_OK
 
+# Initialize Chroma PSU object
+print("Initializing Chroma")
+chroma = ch.CHROMA_62000H()
+
 if chroma.status == "Not Connected":
     init_complete = False
 
     print("Chroma PSU Error!")
-    print(chroma.error_reason)
+    print("\t" + chroma.error_reason)
 
 if init_complete:
+    print("Starting Threads")
     x = threading.Thread(target=CANThread)
     y = threading.Thread(target=SerialThread)
     z = threading.Thread(target=InfoThread)
 
-    print("Running Shore Charger Translation Layer...")
+    print("Shore Charger Translation Layer Running...")
     x.start()
     y.start()
     z.start()

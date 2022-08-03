@@ -27,7 +27,6 @@ class CHROMA_62000H:
             if self.address.__len__() == 0:
                 self.status = "Not Connected"
                 self.error_reason = "Could not connect to device"
-                quit()
             else:
                 self.address = self.address[0]
                 self.device = self.rm.open_resource(self.address)
@@ -38,7 +37,6 @@ class CHROMA_62000H:
         except:
             self.status = "Not Connected"
             self.error_reason = "except: PyVISA is not able to find any devices"
-            quit()
 
     def isConnected(self):
         return self.status
