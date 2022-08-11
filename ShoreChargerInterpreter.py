@@ -50,7 +50,7 @@ def CANThread():
             msg_count = msg_count + 1
 
             if (rx_msg.ID == 0x618):
-                enable_output = (rx_msg.DATA[0] >> 7) & 0b1
+                enable_output = bool((rx_msg.DATA[0] >> 7) & 0b1)
                 max_ac_current = (
                     (rx_msg.DATA[1] << 8) | (rx_msg.DATA[2]))/10.0
                 requested_voltage = (
@@ -59,7 +59,7 @@ def CANThread():
                     (rx_msg.DATA[5] << 8) | (rx_msg.DATA[6]))/10.0
 
         # Messages to Send
-        if((curr_time - prev_time) > 0.1):
+        if((curr_time - prev_time) > 0.25): # TODO - time accuracy is BAD
             tx_msg = pb.TPCANMsg()
             tx_msg.ID = 0x611
             tx_msg.MSGTYPE = pb.PCAN_MESSAGE_STANDARD
@@ -217,7 +217,7 @@ print("Initializing PCAN")
 pcan = pb.PCANBasic()
 
 pcan_handle = pb.PCAN_USBBUS1  # Get PCAN Channel
-baudrate = pb.PCAN_BAUD_500K  # Setup Connection's Baud Rate
+baudrate = pb.PCAN_BAUD_1M     # Setup Connection's Baud Rate
 result = pcan.Initialize(pcan_handle, baudrate)  # initialize device
 
 if result != pb.PCAN_ERROR_OK:
@@ -255,6 +255,10 @@ while(True):
     user_input = str(input())
 
     if user_input == "x":
+        chroma.Abort()
+        tm.sleep(0.1)
+        chroma.Abort()
+        tm.sleep(0.1)
         ExitProgram()
     elif user_input == "r":
         print("Enter new info rate in seconds:")

@@ -36,6 +36,10 @@ class ChromaStatus:
 
 
 class CHROMA_62000H:
+    kMaxPossibleVoltage = 1000.0
+    kMaxPossibleCurrent = 15.0
+    kMaxPossiblePower = 15000.0
+
     def __init__(self, usb_or_serial='USB0'):
         try:
             self.rm = ResourceManager()
@@ -64,7 +68,7 @@ class CHROMA_62000H:
     def ConfigureDefaultProtections(self):
         # Configure default protection limits
         kMinAllowableCurrent = 0.0
-        kMaxAllowableCurrent = 20.0
+        kMaxAllowableCurrent = 15.0
         self.SetCurrentLimits(kMinAllowableCurrent, kMaxAllowableCurrent)
 
         kMinAllowableVoltage = 0.0
@@ -72,15 +76,25 @@ class CHROMA_62000H:
         self.SetVoltageLimits(kMinAllowableVoltage, kMaxAllowableVoltage)
 
         kAbsoluteMaxVoltage = 708.0
-        kAbsoluteMaxCurrent = 22.0
+        kAbsoluteMaxCurrent = 15.0
         kApsoluteMaxPower = 15000.0
         self.SetOVP(kAbsoluteMaxVoltage)
         self.SetOCP(kAbsoluteMaxCurrent)
         self.SetOPP(kApsoluteMaxPower)
 
+        self.SetVoltage(0)
+        self.SetCurrent(0)
+
     def WriteCommand(self, command):
         self.device.write(command)
         time.sleep(_delay)
+
+    def Abort(self):
+        command = ':ABOR'
+        self.WriteCommand(command)
+
+        self.SetVoltage(0)
+        self.SetCurrent(0)
 
     def EnableOutput(self):
         command = ':CONF:OUTP ON'
@@ -95,6 +109,11 @@ class CHROMA_62000H:
         self.WriteCommand(command)
 
     def SetVoltageLimits(self, minVolt, maxVolt):
+        if (maxVolt > self.kMaxPossibleVoltage):
+            maxVolt = self.kMaxPossibleVoltage
+        if (minVolt < 0):
+            minVolt = 0.0
+
         command = ':SOUR:VOLT:LIMIT:LOW %s' % minVolt
         self.WriteCommand(command)
 
@@ -106,6 +125,11 @@ class CHROMA_62000H:
         self.WriteCommand(command)
 
     def SetCurrentLimits(self, minCurr, maxCurr):
+        if(maxCurr > self.kMaxPossibleCurrent):
+            maxCurr = self.kMaxPossibleCurrent
+        if (minCurr < 0):
+            minCurr = 0.0
+
         command = ':SOUR:CURR:LIMIT:LOW %s' % minCurr
         self.WriteCommand(command)
 
@@ -127,7 +151,7 @@ class CHROMA_62000H:
     def GetOutputState(self):
         query = ':CONF:OUTP?'
         out_state = self.device.query(query)
-        if (out_state == "ON"):
+        if (out_state == "ON\n"):
             return True
         return False
 
