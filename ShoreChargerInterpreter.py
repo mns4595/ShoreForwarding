@@ -14,20 +14,6 @@ def CANThread():
         max_ac_current, enable_output, measured_output_enable, measured_voltage, \
         measured_current, measured_status, stop_can_thread
 
-    # Wait for the module to start (i.e.: The clock is running)
-    #start_time = 0
-    #wait_counter = 0
-    # while start_time == 0:
-    #    if (wait_counter % 300000 == 0):
-    #        wait_counter = 0
-    #        print("Waiting for PCAN Signal...")
-
-    #    dumdum = pcan.Read(pcan_handle)
-    #    start_time = dumdum[2].micros + 1000 * dumdum[2].millis + \
-    #        int('0x100000000', 16) * 1000 * dumdum[2].millis_overflow
-
-    #    wait_counter = wait_counter + 1
-
     # Send a message to inform that the CAN code is running
     print("PCAN Signal Received. CAN Loop Running...")
     tm.sleep(0.5)
