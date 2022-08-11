@@ -10,7 +10,9 @@ import sys
 
 
 def CANThread():
-    global pcan, pcan_handle, msg_count, errors, requested_voltage, requested_current
+    global pcan, pcan_handle, msg_count, errors, requested_voltage, requested_current, \
+        max_ac_current, enable_output, measured_output_enable, measured_voltage, \
+        measured_current, measured_status
 
     # Wait for the module to start (i.e.: The clock is running)
     #start_time = 0
@@ -30,6 +32,9 @@ def CANThread():
     print("PCAN Signal Received. CAN Loop Running...")
     tm.sleep(0.5)
 
+    curr_time = tm.perf_counter()
+    prev_time = tm.perf_counter()
+
     # ------------------------------- CAN Loop ------------------------------ #
     while(1):
         # We create a TPCANMsg message structure
@@ -38,27 +43,75 @@ def CANThread():
 
         # Parse the message elements
         errors = errors + CANMsg[0]
-        msg = CANMsg[1]
+        rx_msg = CANMsg[1]
 
-        # Use this for file printing
-        if ((msg.ID != 0)):
+        # Message Receiver
+        if ((rx_msg.ID != 0)):
             msg_count = msg_count + 1
 
-            # TODO - placeholder
-            if (msg.ID == 0x7FF):
-                requested_voltage = ((msg.DATA[7] << 24) | (msg.DATA[6] << 16) | (
-                    msg.DATA[5] << 8) | (msg.DATA[4]))/1000.0
+            if (rx_msg.ID == 0x618):
+                enable_output = (rx_msg.DATA[0] >> 7) & 0b1
+                max_ac_current = (
+                    (rx_msg.DATA[1] << 8) | (rx_msg.DATA[2]))/10.0
+                requested_voltage = (
+                    (rx_msg.DATA[3] << 8) | (rx_msg.DATA[4]))/10.0
+                requested_current = (
+                    (rx_msg.DATA[5] << 8) | (rx_msg.DATA[6]))/10.0
 
-                requested_current = ((msg.DATA[3] << 24) | (msg.DATA[2] << 16) | (
-                    msg.DATA[1] << 8) | (msg.DATA[0]))/1000.0
+        # Messages to Send
+        if((curr_time - prev_time) > 0.1):
+            tx_msg = pb.TPCANMsg()
+            tx_msg.ID = 0x611
+            tx_msg.MSGTYPE = pb.PCAN_MESSAGE_STANDARD
+            tx_msg.LEN = 8
+
+            tx_msg.DATA[7] = (int(measured_current * 10.0) & 0x00FF)
+            tx_msg.DATA[6] = ((int(measured_current * 10.0) >> 8) & 0x00FF)
+            tx_msg.DATA[5] = (int(measured_voltage * 10.0) & 0x00FF)
+            tx_msg.DATA[4] = ((int(measured_voltage * 10.0) >> 8) & 0x00FF)
+            tx_msg.DATA[3] = 0xFF   # Not reported by Chroma PSU
+            tx_msg.DATA[2] = 0xFF   # Not reported by Chroma PSU
+            tx_msg.DATA[1] = 0xFF   # Not reported by Chroma PSU
+            tx_msg.DATA[0] = 0xFF   # Not reported by Chroma PSU
+
+            pcan.Write(pcan_handle, tx_msg)
+
+            tx_msg.ID = 0x615
+            tx_msg.DATA[7] = 0xFF   # Not reported by Chroma PSU
+            tx_msg.DATA[6] = 0xFF   # Not reported by Chroma PSU
+            tx_msg.DATA[5] = 0xFF   # Not reported by Chroma PSU
+            tx_msg.DATA[4] = \
+                ((True & 0b1) << 7) | \
+                ((True & 0b1) << 5) | \
+                ((True & 0b1) << 3)
+            tx_msg.DATA[3] = 0xFF   # Not reported by Chroma PSU
+            tx_msg.DATA[2] = 0xFF   # Not reported by Chroma PSU
+            tx_msg.DATA[1] = 0xFF   # Not reported by Chroma PSU
+            tx_msg.DATA[0] = \
+                ((measured_status.ac_fault & 0b1) << 7) | \
+                ((True & 0b1) << 6) | \
+                ((measured_status.opp & 0b1) << 5) | \
+                ((measured_status.ovp & 0b1) << 4)
+
+            pcan.Write(pcan_handle, tx_msg)
+
+            curr_time = tm.perf_counter()
+            prev_time = tm.perf_counter()
+        else:
+            curr_time = tm.perf_counter()
 
 
 def SerialThread():
-    global requested_voltage, requested_current, measured_voltage, measured_current
+    global requested_voltage, requested_current, measured_voltage, measured_current, \
+        enable_output, measured_output_enable, measured_status
 
     # local vars
     requested_voltage_local = 0.0
     requested_current_local = 0.0
+    enable_output_local = False
+
+    curr_time = tm.perf_counter()
+    prev_time = tm.perf_counter()
 
     # Send a message to inform that the PSU code is running
     print("Chroma Signal Received. Serial Loop Running...")
@@ -68,15 +121,35 @@ def SerialThread():
     while(1):
         if (requested_voltage_local != requested_voltage):
             # send voltage request to PSU
-            measured_voltage = requested_voltage  # TODO - remove
+            requested_voltage_local = requested_voltage
+            chroma.SetVoltage(requested_voltage)
 
         if (requested_current_local != requested_current):
             # send current request to PSU
-            measured_current = requested_current  # TODO - remove
+            requested_current_local = requested_current
+            chroma.SetCurrent(requested_current)
+
+        if (enable_output_local != enable_output):
+            enable_output_local = enable_output
+            if (enable_output):
+                chroma.EnableOutput()
+            else:
+                chroma.DisableOutput()
+
+        if((curr_time - prev_time) > 0.5):
+            measured_voltage = chroma.MeasureVoltage()
+            measured_current = chroma.MeasureCurrent()
+            measured_output_enable = chroma.GetOutputState()
+            measured_status = chroma.FetchStatus()
+
+            curr_time = tm.perf_counter()
+            prev_time = tm.perf_counter()
+        else:
+            curr_time = tm.perf_counter()
 
 
 def InfoThread():
-    global msg_count, errors, measured_voltage, measured_current, info_rate
+    global msg_count, errors, measured_voltage, measured_current, info_rate, measured_output_enable
 
     # timing for status print
     app_start_time = tm.perf_counter()
@@ -90,13 +163,18 @@ def InfoThread():
     print("")
     # ------------------------------ Info Loop ------------------------------ #
     while(1):
+        if (measured_output_enable == True):
+            output_enable_string = "ON"
+        else:
+            output_enable_string = "OFF"
+
         if ((curr_app_time - prev_app_time) > info_rate):
             print("Run Time: " + f'{(curr_app_time-app_start_time)/60:.2f}'
                   + "mins    CAN Msg Count: " + str(msg_count) + "    "
                     + "PSU Measured Voltage: " + f'{measured_voltage:.2f}'
                     + " V    "
                     + "PSU Measured Current: " + f'{measured_current:.2f}'
-                    + " A")
+                    + " A" + "    Output is " + output_enable_string)
 
             curr_app_time = tm.perf_counter()
             prev_app_time = tm.perf_counter()
@@ -124,8 +202,14 @@ requested_current = 0.0
 
 measured_voltage = 0.0
 measured_current = 0.0
+measured_output_enable = False
+
+max_ac_current = 0.0
+enable_output = False
 
 info_rate = 10  # Info message rate in seconds
+
+measured_status = ch.ChromaStatus()
 
 
 # Initialize pcan object
@@ -156,6 +240,7 @@ if chroma.status == "Not Connected":
 
     ExitProgram()
 
+chroma.ConfigureDefaultProtections()
 
 x = threading.Thread(target=CANThread, daemon=True)
 y = threading.Thread(target=SerialThread, daemon=True)

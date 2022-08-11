@@ -8,11 +8,31 @@
 # - Download and install National Instruments VISA software (https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html#442805)
 # - Download and install PyVISA (eg. "pip install -U pyvisa" from command line)
 
+from dataclasses import dataclass
 from pyvisa import ResourceManager
 from visa import *
 import time
 
 _delay = 0.01  # in seconds
+
+# Make a struct for the status
+
+
+@dataclass
+class ChromaStatus:
+    ovp: bool = False
+    ocp: bool = False
+    opp: bool = False
+    remote_inhibit: bool = False
+    otp: bool = False
+    fan_lock: bool = False
+    sense_fault: bool = False
+    series_fault: bool = False
+    ac_fault: bool = False
+    fold_back_cv_2_cc: bool = False
+    fold_back_cc_2_cv: bool = False
+    output_state: str = "OFF"
+    cvcc: str = "CV"
 
 
 class CHROMA_62000H:
@@ -40,6 +60,23 @@ class CHROMA_62000H:
 
     def IsConnected(self):
         return self.status
+
+    def ConfigureDefaultProtections(self):
+        # Configure default protection limits
+        kMinAllowableCurrent = 0.0
+        kMaxAllowableCurrent = 20.0
+        self.SetCurrentLimits(kMinAllowableCurrent, kMaxAllowableCurrent)
+
+        kMinAllowableVoltage = 0.0
+        kMaxAllowableVoltage = 706.0
+        self.SetVoltageLimits(kMinAllowableVoltage, kMaxAllowableVoltage)
+
+        kAbsoluteMaxVoltage = 708.0
+        kAbsoluteMaxCurrent = 22.0
+        kApsoluteMaxPower = 15000.0
+        self.SetOVP(kAbsoluteMaxVoltage)
+        self.SetOCP(kAbsoluteMaxCurrent)
+        self.SetOPP(kApsoluteMaxPower)
 
     def WriteCommand(self, command):
         self.device.write(command)
@@ -90,7 +127,9 @@ class CHROMA_62000H:
     def GetOutputState(self):
         query = ':CONF:OUTP?'
         out_state = self.device.query(query)
-        return out_state
+        if (out_state == "ON"):
+            return True
+        return False
 
     def GetConfiguredVoltage(self):
         query = ':SOUR:VOLT?'
@@ -151,18 +190,23 @@ class CHROMA_62000H:
 
     def FetchStatus(self):
         query = ':FETC:STAT?'
-        status = self.device.query(query)
+        raw = self.device.query(query)
+        status0 = ord(raw[0])
+        status1 = ord(raw[1])
 
-        ovp = status & 0x01
-        ocp = (status >> 1) & 0x01
-        opp = (status >> 2) & 0x01
-        remote_inhibit = (status >> 3) & 0x01
-        otp = (status >> 4) & 0x01
-        fan_lock = (status >> 5) & 0x01
-        sense_fault = (status >> 6) & 0x01
-        series_fault = (status >> 7) & 0x01
-        ac_fault = (status >> 9) & 0x01
-        fold_back_cv_2_cc = (status >> 10) & 0x01
-        fold_back_cc_2_cv = (status >> 11) & 0x01
+        status_struct = ChromaStatus()
 
-        return (ovp, ocp, opp, remote_inhibit, otp, fan_lock, sense_fault, series_fault, ac_fault, fold_back_cv_2_cc, fold_back_cc_2_cv)
+        status_struct.ovp = status0 & 0x01
+        status_struct.ocp = (status0 >> 1) & 0x01
+        status_struct.opp = (status0 >> 2) & 0x01
+        status_struct.remote_inhibit = (status0 >> 3) & 0x01
+        status_struct.otp = (status0 >> 4) & 0x01
+        status_struct.fan_lock = (status0 >> 5) & 0x01
+        status_struct.sense_fault = (status0 >> 6) & 0x01
+        status_struct.series_fault = (status0 >> 7) & 0x01
+
+        status_struct.ac_fault = (status1 >> 9) & 0x01
+        status_struct.fold_back_cv_2_cc = (status1 >> 10) & 0x01
+        status_struct.fold_back_cc_2_cv = (status1 >> 11) & 0x01
+        # TODO Arg2 and Arg3
+        return status_struct
