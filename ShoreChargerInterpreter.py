@@ -32,8 +32,8 @@ def CANThread():
     print("PCAN Signal Received. CAN Loop Running...")
     tm.sleep(0.5)
 
-    curr_time = tm.perf_counter()
-    prev_time = tm.perf_counter()
+    curr_time = tm.time_ns()
+    prev_time = tm.time_ns()
 
     # ------------------------------- CAN Loop ------------------------------ #
     while(1):
@@ -59,7 +59,7 @@ def CANThread():
                     (rx_msg.DATA[5] << 8) | (rx_msg.DATA[6]))/10.0
 
         # Messages to Send
-        if((curr_time - prev_time) > 0.25): # TODO - time accuracy is BAD
+        if((curr_time - prev_time) > 250000000):  # TODO - time accuracy is BAD
             tx_msg = pb.TPCANMsg()
             tx_msg.ID = 0x611
             tx_msg.MSGTYPE = pb.PCAN_MESSAGE_STANDARD
@@ -95,10 +95,10 @@ def CANThread():
 
             pcan.Write(pcan_handle, tx_msg)
 
-            curr_time = tm.perf_counter()
-            prev_time = tm.perf_counter()
+            curr_time = tm.time_ns()
+            prev_time = tm.time_ns()
         else:
-            curr_time = tm.perf_counter()
+            curr_time = tm.time_ns()
 
 
 def SerialThread():
@@ -238,17 +238,17 @@ chroma = ch.CHROMA_62000H()
 if chroma.status == "Not Connected":
     print("Chroma PSU Error! " + chroma.error_reason)
 
-    ExitProgram()
+#     ExitProgram()
 
-chroma.ConfigureDefaultProtections()
+# chroma.ConfigureDefaultProtections()
 
 x = threading.Thread(target=CANThread, daemon=True)
-y = threading.Thread(target=SerialThread, daemon=True)
+# y = threading.Thread(target=SerialThread, daemon=True)
 z = threading.Thread(target=InfoThread, daemon=True)
 
 print("\nShore Charger Translation Layer Running!")
 x.start()
-y.start()
+# y.start()
 z.start()
 
 while(True):
