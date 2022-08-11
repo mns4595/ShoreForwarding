@@ -59,7 +59,8 @@ def CANThread():
                     (rx_msg.DATA[5] << 8) | (rx_msg.DATA[6]))/10.0
 
         # Messages to Send
-        if((curr_time - prev_time) > 250000000):  # TODO - time accuracy is BAD
+        kTxMessagePeriod = 100000000 # In Nano-seconds
+        if((curr_time - prev_time) > kTxMessagePeriod):
             tx_msg = pb.TPCANMsg()
             tx_msg.ID = 0x611
             tx_msg.MSGTYPE = pb.PCAN_MESSAGE_STANDARD
@@ -110,8 +111,8 @@ def SerialThread():
     requested_current_local = 0.0
     enable_output_local = False
 
-    curr_time = tm.perf_counter()
-    prev_time = tm.perf_counter()
+    curr_time = tm.time_ns()
+    prev_time = tm.time_ns()
 
     # Send a message to inform that the PSU code is running
     print("Chroma Signal Received. Serial Loop Running...")
@@ -135,26 +136,27 @@ def SerialThread():
                 chroma.EnableOutput()
             else:
                 chroma.DisableOutput()
-
-        if((curr_time - prev_time) > 0.5):
+        
+        kFetchPeriod = 500000000 # In Nano-seconds
+        if((curr_time - prev_time) > kFetchPeriod):
             measured_voltage = chroma.MeasureVoltage()
             measured_current = chroma.MeasureCurrent()
             measured_output_enable = chroma.GetOutputState()
             measured_status = chroma.FetchStatus()
 
-            curr_time = tm.perf_counter()
-            prev_time = tm.perf_counter()
+            curr_time = tm.time_ns()
+            prev_time = tm.time_ns()
         else:
-            curr_time = tm.perf_counter()
+            curr_time = tm.time_ns()
 
 
 def InfoThread():
     global msg_count, errors, measured_voltage, measured_current, info_rate, measured_output_enable
 
     # timing for status print
-    app_start_time = tm.perf_counter()
-    curr_app_time = tm.perf_counter()
-    prev_app_time = tm.perf_counter()
+    app_start_time = tm.time()
+    curr_app_time = tm.time()
+    prev_app_time = tm.time()
 
     # Send a message to inform that the main code is running
     print("Info Loop Running...")
@@ -176,10 +178,10 @@ def InfoThread():
                     + "PSU Measured Current: " + f'{measured_current:.2f}'
                     + " A" + "    Output is " + output_enable_string)
 
-            curr_app_time = tm.perf_counter()
-            prev_app_time = tm.perf_counter()
+            curr_app_time = tm.time()
+            prev_app_time = tm.time()
         else:
-            curr_app_time = tm.perf_counter()
+            curr_app_time = tm.time()
 
 ###############################################################################
 #                                  MAIN                                       #
@@ -238,17 +240,17 @@ chroma = ch.CHROMA_62000H()
 if chroma.status == "Not Connected":
     print("Chroma PSU Error! " + chroma.error_reason)
 
-#     ExitProgram()
+    ExitProgram()
 
-# chroma.ConfigureDefaultProtections()
+chroma.ConfigureDefaultProtections()
 
 x = threading.Thread(target=CANThread, daemon=True)
-# y = threading.Thread(target=SerialThread, daemon=True)
+y = threading.Thread(target=SerialThread, daemon=True)
 z = threading.Thread(target=InfoThread, daemon=True)
 
 print("\nShore Charger Translation Layer Running!")
 x.start()
-# y.start()
+y.start()
 z.start()
 
 while(True):
