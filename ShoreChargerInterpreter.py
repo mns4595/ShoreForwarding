@@ -12,7 +12,7 @@ import sys
 def CANThread():
     global pcan, pcan_handle, msg_count, errors, requested_voltage, requested_current, \
         max_ac_current, enable_output, measured_output_enable, measured_voltage, \
-        measured_current, measured_status
+        measured_current, measured_status, stop_can_thread
 
     # Wait for the module to start (i.e.: The clock is running)
     #start_time = 0
@@ -101,12 +101,15 @@ def CANThread():
         else:
             curr_time = tm.time_ns()
 
+        if (stop_can_thread):
+            break
+
         tm.sleep(0.0001)
 
 
 def SerialThread():
     global requested_voltage, requested_current, measured_voltage, measured_current, \
-        enable_output, measured_output_enable, measured_status
+        enable_output, measured_output_enable, measured_status, stop_serial_thread
 
     # local vars
     requested_voltage_local = 0.0
@@ -151,11 +154,14 @@ def SerialThread():
         else:
             curr_time = tm.time_ns()
 
+        if (stop_serial_thread):
+            break
+
         tm.sleep(0.01)
 
 
 def InfoThread():
-    global msg_count, errors, measured_voltage, measured_current, info_rate, measured_output_enable
+    global msg_count, errors, measured_voltage, measured_current, info_rate, measured_output_enable, stop_info_thread
 
     # timing for status print
     app_start_time = tm.time()
@@ -186,6 +192,9 @@ def InfoThread():
             prev_app_time = tm.time()
         else:
             curr_app_time = tm.time()
+
+        if (stop_info_thread):
+            break
 
         tm.sleep(0.25)
 
@@ -218,6 +227,11 @@ enable_output = False
 info_rate = 10  # Info message rate in seconds
 
 measured_status = ch.ChromaStatus()
+
+# Thread stop flags
+stop_can_thread = False
+stop_serial_thread = False
+stop_info_thread = False
 
 
 # Initialize pcan object
@@ -254,10 +268,13 @@ x = threading.Thread(target=CANThread, daemon=True)
 y = threading.Thread(target=SerialThread, daemon=True)
 z = threading.Thread(target=InfoThread, daemon=True)
 
-print("\nShore Charger Translation Layer Running!")
+print('')
+
 x.start()
 y.start()
 z.start()
+
+print("\nShore Charger Translation Layer Running!\n")
 
 while(True):
     user_input = str(input())
@@ -267,6 +284,14 @@ while(True):
         tm.sleep(0.1)
         chroma.Abort()
         tm.sleep(0.1)
+
+        stop_can_thread = True
+        x.join()
+        stop_serial_thread = True
+        y.join()
+        stop_info_thread = True
+        z.join()
+
         ExitProgram()
     elif user_input == "r":
         print("Enter new info rate in seconds:")
