@@ -59,7 +59,7 @@ def CANThread():
                     (rx_msg.DATA[5] << 8) | (rx_msg.DATA[6]))/10.0
 
         # Messages to Send
-        kTxMessagePeriod = 100000000 # In Nano-seconds
+        kTxMessagePeriod = 100000000  # In Nano-seconds
         if((curr_time - prev_time) > kTxMessagePeriod):
             tx_msg = pb.TPCANMsg()
             tx_msg.ID = 0x611
@@ -136,8 +136,8 @@ def SerialThread():
                 chroma.EnableOutput()
             else:
                 chroma.DisableOutput()
-        
-        kFetchPeriod = 500000000 # In Nano-seconds
+
+        kFetchPeriod = 500000000  # In Nano-seconds
         if((curr_time - prev_time) > kFetchPeriod):
             measured_voltage = chroma.MeasureVoltage()
             measured_current = chroma.MeasureCurrent()
