@@ -101,6 +101,8 @@ def CANThread():
         else:
             curr_time = tm.time_ns()
 
+        tm.sleep(0.01)
+
 
 def SerialThread():
     global requested_voltage, requested_current, measured_voltage, measured_current, \
@@ -149,6 +151,8 @@ def SerialThread():
         else:
             curr_time = tm.time_ns()
 
+        tm.sleep(0.01)
+
 
 def InfoThread():
     global msg_count, errors, measured_voltage, measured_current, info_rate, measured_output_enable
@@ -182,6 +186,8 @@ def InfoThread():
             prev_app_time = tm.time()
         else:
             curr_app_time = tm.time()
+
+        tm.sleep(0.25)
 
 ###############################################################################
 #                                  MAIN                                       #
