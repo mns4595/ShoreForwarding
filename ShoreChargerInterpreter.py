@@ -101,7 +101,7 @@ def CANThread():
         else:
             curr_time = tm.time_ns()
 
-        tm.sleep(0.01)
+        tm.sleep(0.0001)
 
 
 def SerialThread():
