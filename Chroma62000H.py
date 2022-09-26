@@ -55,6 +55,7 @@ class CHROMA_62000H:
                 self.address = self.address[0]
                 self.device = self.rm.open_resource(self.address)
                 # print("Connected to " + self.address)
+                # TODO - should add a check to see if it is the correct device
                 self.status = "Chroma 62000H Supply Connected"
                 self.connected_with = 'USB'
 
